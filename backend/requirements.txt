@@ -12,16 +12,14 @@ langchain-core==0.1.36
 # Embeddings
 sentence-transformers==2.3.0
 
-# Vector Store
-faiss-cpu==1.9.0.post1
+# Vector Store (use latest faiss-cpu version available for Python 3.11+)
+faiss-cpu>=1.7.0,<2.0.0
 
 # Utilities
-numpy==1.26.4
+numpy>=1.24.0
 
 # HTTP client for Ollama API
 requests==2.31.0
 
 # Production WSGI server (for Render deployment)
 gunicorn==21.2.0
-
-
