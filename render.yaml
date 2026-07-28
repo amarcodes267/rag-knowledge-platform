@@ -1,5 +1,17 @@
 # Render Blueprint Configuration
 # This file defines the services for deployment on Render.
+#
+# IMPORTANT NOTES:
+# 1. After deploying, update CORS_ORIGINS in Render dashboard with your actual
+#    Render URL (e.g., https://your-app.onrender.com) - OR set RENDER_EXTERNAL_URL
+#    as an environment variable in Render dashboard and the app will auto-detect it.
+#
+# 2. Ollama CANNOT run on Render. You MUST host Ollama on an external server
+#    (e.g., VPS, dedicated machine, or use ngrok) and update OLLAMA_BASE_URL
+#    to point to that external instance BEFORE chat/RAG features will work.
+#
+# 3. The 'starter' plan (512MB RAM) is the minimum. For production with
+#    sentence-transformers + FAISS, consider upgrading to a plan with more memory.
 
 services:
   # Backend Web Service (Flask API + Frontend serving)
@@ -10,15 +22,22 @@ services:
     plan: starter
     buildCommand: |
       cd frontend && npm install && npm run build && cd ../backend && pip install -r requirements.txt
-    startCommand: cd backend && gunicorn app:create_app --worker-class sync --workers 1 --timeout 120 --bind 0.0.0.0:$PORT
+    # Factory function pattern: create_app() returns the Flask instance
+    startCommand: cd backend && gunicorn 'app:create_app()' --worker-class sync --workers 1 --timeout 120 --bind 0.0.0.0:$PORT --preload
     healthCheckPath: /api/health
     envVars:
       - key: FLASK_DEBUG
         value: "False"
       - key: SECRET_KEY
         generateValue: true
+      - key: HOST
+        value: "0.0.0.0"
+      # After deployment, update this with your actual Render URL or set
+      # RENDER_EXTERNAL_URL env var in Render dashboard for auto-detection.
       - key: CORS_ORIGINS
-        value: "https://your-app.onrender.com,http://localhost:3000,http://localhost:5173"
+        value: "http://localhost:3000,http://localhost:5173"
+      # REQUIRED: Point this to your externally hosted Ollama instance.
+      # Ollama does NOT run on Render's infrastructure.
       - key: OLLAMA_BASE_URL
         value: "http://localhost:11434"
       - key: OLLAMA_MODEL

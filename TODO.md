@@ -1,12 +1,17 @@
-# Part 2 Testing & Verification - Progress Tracker
+# Render Deployment Configuration - Progress Tracker
 
 ## Steps
-- [x] 1. Install dependencies: `pip install -r requirements.txt`
-- [x] 2. Run `test_audit.py` — captured 16 passed, 2 failed
-- [x] 3. Analyze failures and fix critical bugs:
-  - Fixed test_config(): hardcoded `'llama3.2'` → dynamic check against Config.OLLAMA_MODEL
-  - Fixed test_llm_service(): hardcoded `'llama3.2'` → dynamic check, added missing `from config import Config`
-- [x] 4. Re-run `test_audit.py` — **ALL 18 TESTS PASSED ✅**
-- [x] 5. Manually verified: Embedding model loads, FAISS index persists, Ollama query works
-- [x] 6. ✅ **PART 2 IS FULLY FUNCTIONAL AND READY FOR PART 3**
+- [x] 1. Update `render.yaml`:
+  - [x] Fix Gunicorn start command for factory function
+  - [x] Add clarifying comments about Ollama external hosting requirement
+  - [x] Add `HOST` env var
+  - [x] Add CORS dynamic URL comment
+- [x] 2. Update `backend/config.py`:
+  - [x] Add auto-detection of Render external URL for CORS origins
+- [x] 3. Verify the configuration is consistent
+  - ✅ render.yaml startCommand uses `'app:create_app()'` factory pattern
+  - ✅ render.yaml has HOST env var explicitly set
+  - ✅ render.yaml has detailed comments about Ollama and CORS
+  - ✅ config.py auto-detects RENDER_EXTERNAL_URL for CORS
+  - ✅ Both files are consistent with each other
 

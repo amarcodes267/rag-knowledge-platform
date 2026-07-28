@@ -27,6 +27,15 @@ class Config:
     _cors_origins = os.environ.get('CORS_ORIGINS', 'http://localhost:3000,http://localhost:5173')
     CORS_ORIGINS = [origin.strip() for origin in _cors_origins.split(',')]
     
+    # Auto-detect Render external URL for CORS if available
+    # Render automatically sets RENDER_EXTERNAL_URL to your service's public URL
+    _render_url = os.environ.get('RENDER_EXTERNAL_URL')
+    if _render_url:
+        # Remove trailing slash if present and add to CORS origins
+        _render_url = _render_url.rstrip('/')
+        if _render_url not in CORS_ORIGINS:
+            CORS_ORIGINS.append(_render_url)
+    
     # ChromaDB configuration
     CHROMA_PERSIST_DIR = os.path.join(BASE_DIR, 'chroma_db')
     COLLECTION_NAME = 'enterprise_knowledge_platform'
