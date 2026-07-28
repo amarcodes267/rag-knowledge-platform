@@ -1,6 +1,10 @@
 """
 RAG Service - Orchestrates the complete Retrieval-Augmented Generation pipeline.
 Connects the vector store search with LLM generation for context-aware answers.
+
+OPTIMIZED: Heavy service imports (vector_store, llm_service, prompt_service) are
+moved inside the query() method to prevent cascade-loading of all AI services
+during Flask startup. This saves ~300MB+ of memory at startup.
 """
 
 import logging
@@ -9,9 +13,6 @@ from typing import List, Dict, Optional
 from datetime import datetime
 
 from config import Config
-from services.vector_store import vector_store
-from services.llm_service import llm_service
-from services.prompt_service import prompt_service
 
 logger = logging.getLogger(__name__)
 
@@ -134,6 +135,10 @@ class RAGService:
     Receive Response
     ↓
     Return Answer + Sources
+    
+    OPTIMIZED: Imports for vector_store, llm_service, prompt_service are
+    done inside the query() method so they only load when a user chats,
+    not during Flask startup.
     """
     
     _instance = None
@@ -161,6 +166,11 @@ class RAGService:
         """
         Execute the complete RAG pipeline for a user question.
         
+        CASCADE IMPORTS (done here to prevent loading at startup):
+        - vector_store  → FAISS + numpy + pickle (loaded lazily)
+        - llm_service   → requests library
+        - prompt_service → lightweight (already imported)
+        
         Args:
             question: The user's natural language question
             session_id: Optional session ID for multi-turn conversation.
@@ -176,6 +186,13 @@ class RAGService:
                 - 'has_context': Whether relevant context was found
                 - 'error': Error message if something went wrong
         """
+        # Local imports: prevents cascade-loading of all AI services at startup.
+        # These modules contain heavy imports (faiss, numpy, pickle, requests, etc.)
+        # that should not load during Flask startup on a 512MB Render instance.
+        from services.vector_store import vector_store
+        from services.llm_service import llm_service
+        from services.prompt_service import prompt_service
+        
         try:
             # Validate input
             if not question or not question.strip():
@@ -352,6 +369,10 @@ class RAGService:
         Returns:
             Dict with system status information
         """
+        # Local imports to prevent cascade-loading at startup
+        from services.llm_service import llm_service
+        from services.vector_store import vector_store
+        
         llm_status = llm_service.get_status()
         try:
             stats = vector_store.get_collection_stats()
@@ -369,5 +390,6 @@ class RAGService:
 
 
 # Global singleton instance
+# Note: The heavy AI services (vector_store, llm_service, prompt_service) are
+# NOT imported at this point. They only load when query() is first called.
 rag_service = RAGService()
-

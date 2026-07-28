@@ -1,15 +1,16 @@
+"""
+Vector Store Service - Manages vector embeddings using FAISS with persistent storage.
+
+OPTIMIZED: Heavy imports (faiss, numpy, pickle) are lazy-loaded inside methods
+to avoid ~100MB+ memory spike during Flask startup on Render's 512MB plan.
+"""
+
 import os
-import json
 import logging
-import pickle
 import uuid
-import numpy as np
 from typing import List, Optional, Dict, Any
 
-import faiss
-
 from config import Config
-from services.embeddings import embedding_service
 
 logger = logging.getLogger(__name__)
 
@@ -46,9 +47,18 @@ class VectorStoreService:
         self._metadata_path = os.path.join(persist_dir, 'documents.pkl')
     
     def _ensure_initialized(self):
-        """Lazy-initialize the FAISS index and load persisted data."""
+        """
+        Lazy-initialize the FAISS index and load persisted data.
+        
+        Imports faiss and pickle only when first needed — not at module load time.
+        This prevents ~100MB of AI/ML libraries from loading during Flask startup.
+        """
         if self._index is not None:
             return
+        
+        # Local imports: prevents heavy library load at startup
+        import faiss
+        import pickle
         
         self._get_paths()
         
@@ -77,6 +87,9 @@ class VectorStoreService:
     
     def _persist(self):
         """Save the FAISS index and metadata to disk."""
+        import faiss
+        import pickle
+        
         try:
             faiss.write_index(self._index, self._persist_path)
             with open(self._metadata_path, 'wb') as f:
@@ -105,6 +118,10 @@ class VectorStoreService:
             raise ValueError('No chunks to add to vector store')
         
         self._ensure_initialized()
+        
+        # Local imports
+        import numpy as np
+        from services.embeddings import embedding_service
         
         # Extract texts and metadata
         texts = [chunk['content'] for chunk in chunks]
@@ -171,6 +188,10 @@ class VectorStoreService:
         # Handle None n_results
         if n_results is None:
             n_results = 5
+        
+        # Local imports
+        import numpy as np
+        from services.embeddings import embedding_service
         
         # Generate embedding for the query
         query_embedding = embedding_service.encode_single(query.strip())
@@ -253,6 +274,9 @@ class VectorStoreService:
         """
         self._ensure_initialized()
         
+        # Local import
+        import numpy as np
+        
         # Find documents to delete
         docs_to_delete = [
             doc for doc in self._documents
@@ -287,4 +311,5 @@ class VectorStoreService:
 
 
 # Global singleton instance
+# Note: FAISS and numpy are NOT loaded at this point — only the lightweight Python object
 vector_store = VectorStoreService()

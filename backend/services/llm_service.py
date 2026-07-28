@@ -1,12 +1,15 @@
 """
 LLM Service - Handles communication with Ollama for local LLM inference.
 Manages connection to Ollama server, model verification, and response generation.
+
+OPTIMIZED: The `requests` library import is moved inside methods to avoid
+a trivial overhead at startup. Ollama is configured as an external service
+via environment variables (not run on Render).
 """
 
 import json
 import logging
-import requests
-from typing import List, Dict, Optional, Generator
+from typing import List, Dict, Optional
 from functools import lru_cache
 
 from config import Config
@@ -59,6 +62,8 @@ class LLMService:
         Returns:
             True if Ollama is running, False otherwise
         """
+        import requests
+        
         try:
             response = requests.get(
                 f'{self.base_url}/api/tags',
@@ -90,6 +95,8 @@ class LLMService:
         Returns:
             True if the model is available, False otherwise
         """
+        import requests
+        
         try:
             response = requests.get(
                 f'{self.base_url}/api/tags',
@@ -151,6 +158,8 @@ class LLMService:
             ConnectionError: If Ollama is not running
             RuntimeError: If model is not available
         """
+        import requests
+        
         if not self.is_ollama_running():
             raise ConnectionError(
                 'Ollama server is not running. '
@@ -302,4 +311,3 @@ class LLMService:
 
 # Global singleton instance
 llm_service = LLMService()
-

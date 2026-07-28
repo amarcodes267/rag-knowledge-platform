@@ -7,11 +7,13 @@
 #    as an environment variable in Render dashboard and the app will auto-detect it.
 #
 # 2. Ollama CANNOT run on Render. You MUST host Ollama on an external server
-#    (e.g., VPS, dedicated machine, or use ngrok) and update OLLAMA_BASE_URL
+#    (e.g., VPS, dedicated machine) and update OLLAMA_BASE_URL
 #    to point to that external instance BEFORE chat/RAG features will work.
 #
-# 3. The 'starter' plan (512MB RAM) is the minimum. For production with
-#    sentence-transformers + FAISS, consider upgrading to a plan with more memory.
+# 3. Plan: Starter (512MB RAM). The app is optimized for this plan:
+#    - Heavy AI models (sentence-transformers, faiss) are lazy-loaded only on first use
+#    - Gunicorn uses 1 worker with no preload to minimize startup memory
+#    - Flask startup is ~50-80MB, leaving ~430MB for model loading at runtime
 
 services:
   # Backend Web Service (Flask API + Frontend serving)
@@ -22,8 +24,10 @@ services:
     plan: starter
     buildCommand: |
       cd frontend && npm install && npm run build && cd ../backend && pip install -r requirements.txt
-    # Factory function pattern: create_app() returns the Flask instance
-    startCommand: cd backend && gunicorn 'app:create_app()' --worker-class sync --workers 1 --timeout 120 --bind 0.0.0.0:$PORT --preload
+    # OPTIMIZED: No --preload flag (prevents loading all code into memory at startup)
+    # OPTIMIZED: 1 worker only (512MB RAM can't handle more)
+    # OPTIMIZED: 300s timeout (models need time to load on first request)
+    startCommand: cd backend && gunicorn 'app:create_app()' --worker-class sync --workers 1 --timeout 300 --bind 0.0.0.0:$PORT
     healthCheckPath: /api/health
     envVars:
       - key: FLASK_DEBUG
@@ -46,3 +50,7 @@ services:
         value: "60"
       - key: MAX_CONTENT_LENGTH
         value: "52428800"
+      - key: RAG_N_RESULTS
+        value: "5"
+      - key: MAX_HISTORY_LENGTH
+        value: "10"

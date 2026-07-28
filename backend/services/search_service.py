@@ -6,8 +6,6 @@ Provides high-level search functionality with result formatting.
 import logging
 from typing import List, Optional, Dict, Any
 
-from services.vector_store import vector_store
-
 logger = logging.getLogger(__name__)
 
 
@@ -39,6 +37,9 @@ def search_documents(
     Raises:
         ValueError: If query is empty or n_results is out of range
     """
+    # Local import: vector_store is only loaded when search is actually used
+    from services.vector_store import vector_store
+    
     # Validate query
     if not query or not query.strip():
         raise ValueError('Search query cannot be empty')
@@ -76,5 +77,7 @@ def get_search_stats() -> dict:
     Returns:
         Dict with index statistics
     """
+    # Local import: vector_store is only loaded when stats are actually requested
+    from services.vector_store import vector_store
+    
     return vector_store.get_collection_stats()
-

@@ -1,13 +1,13 @@
 """
 Embeddings Service - Generates vector embeddings using Sentence Transformers.
 Uses the all-MiniLM-L6-v2 model for efficient, high-quality embeddings.
+
+OPTIMIZED: SentenceTransformer import is lazy-loaded inside _load_model()
+to avoid ~200MB+ memory spike during Flask startup on Render's 512MB plan.
 """
 
 import logging
-from typing import List, Optional
-from functools import lru_cache
-
-from sentence_transformers import SentenceTransformer
+from typing import List
 
 from config import Config
 
@@ -19,7 +19,7 @@ class EmbeddingService:
     Singleton service for generating text embeddings.
     
     Uses Sentence Transformers with all-MiniLM-L6-v2 model.
-    Model is loaded once and reused for all embedding requests.
+    Model is lazy-loaded on first use to minimize startup memory.
     """
     
     _instance = None
@@ -32,8 +32,18 @@ class EmbeddingService:
         return cls._instance
     
     def _load_model(self):
-        """Lazy-load the sentence transformer model."""
+        """
+        Lazy-load the sentence transformer model.
+        
+        Import is done here (not at module level) to prevent loading
+        torch + sentence-transformers (~200MB+) during Flask startup.
+        On Render's 512MB plan, deferred loading is critical for passing
+        the initial health check before memory is exhausted.
+        """
         if self._model is None:
+            # Local import: prevents heavy AI library load at module import time
+            from sentence_transformers import SentenceTransformer
+            
             model_name = getattr(Config, 'EMBEDDING_MODEL', 'all-MiniLM-L6-v2')
             logger.info(f'Loading embedding model: {model_name}')
             self._model = SentenceTransformer(model_name)
@@ -88,6 +98,6 @@ class EmbeddingService:
         return model.get_sentence_embedding_dimension()
 
 
-# Global singleton instance
+# Global singleton instance - note: model is NOT loaded at this point
+# Only the lightweight Python object is created (~1KB), NOT ~200MB
 embedding_service = EmbeddingService()
-

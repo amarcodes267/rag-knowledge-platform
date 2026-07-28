@@ -1,25 +1,25 @@
-Flask==3.0.0
-Flask-CORS==4.0.0
-python-dotenv==1.0.0
+# Core web framework
+flask==3.1.0
+flask-cors==5.0.1
+gunicorn==23.0.0
 
-# PDF Processing
-PyMuPDF==1.24.0
+# Environment configuration
+python-dotenv==1.1.0
 
-# Text Splitting
-langchain-text-splitters==0.0.1
-langchain-core==0.1.36
+# HTTP client (for Ollama API calls)
+requests==2.32.3
 
-# Embeddings
-sentence-transformers==2.3.0
+# PDF processing
+PyMuPDF==1.25.4
 
-# Vector Store (use latest faiss-cpu version available for Python 3.11+)
-faiss-cpu>=1.7.0,<2.0.0
+# Text splitting
+langchain-text-splitters==0.3.6
 
-# Utilities
-numpy>=1.24.0
+# Vector embeddings (CPU-only version)
+sentence-transformers==3.4.1
 
-# HTTP client for Ollama API
-requests==2.31.0
+# Vector similarity search (CPU-only version)
+faiss-cpu==1.10.0
 
-# Production WSGI server (for Render deployment)
-gunicorn==21.2.0
+# Scientific computing (dependency for faiss/sentence-transformers)
+numpy==2.2.3
